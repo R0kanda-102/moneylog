@@ -1,0 +1,15 @@
+# Gradle
+build/
+.gradle/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 환경변수 / 시크릿
+.env
+*.pem
+
+# OS
+.DS_Store
