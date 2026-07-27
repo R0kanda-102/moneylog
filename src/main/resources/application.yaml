@@ -17,6 +17,10 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+jwt:
+  secret: ${JWT_SECRET:Zm9yLWRldi1vbmx5LWNoYW5nZS10aGlzLXNlY3JldC0zMmJ5dGVzIQ==}
+  expiration-ms: 3600000
+
 ---
 # ===== 로컬 프로파일 (H2 인메모리) =====
 spring:
