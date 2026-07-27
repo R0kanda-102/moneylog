@@ -23,7 +23,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/moneylog:latest
+          tags: ghcr.io/r0kanda-102/moneylog:latest
 
   deploy:
     needs: build-and-push
