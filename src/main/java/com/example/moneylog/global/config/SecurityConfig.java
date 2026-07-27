@@ -27,7 +27,12 @@ public class SecurityConfig {
             "/api/auth/login",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/h2-console/**"
+            "/h2-console/**",
+            "/",
+            "/*.html",
+            "/js/**",
+            "/css/**",
+            "/favicon.ico"
     };
 
     @Bean

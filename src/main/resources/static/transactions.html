@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>머니로그 - 거래내역</title>
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+            padding: 24px;
+        }
+        .container { max-width: 640px; margin: 0 auto; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 20px; margin: 0; }
+        #logoutBtn {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .card h2 { font-size: 15px; margin: 0 0 12px; }
+        .form-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        select, input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        input[type="text"] { flex: 1; min-width: 120px; }
+        button.primary {
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .summary {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .summary div {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .summary .label { font-size: 12px; color: #888; }
+        .summary .value { font-size: 18px; font-weight: bold; margin-top: 4px; }
+        ul#txList { list-style: none; padding: 0; margin: 0; }
+        ul#txList li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        ul#txList li:last-child { border-bottom: none; }
+        .tx-info .cat { color: #4a6cf7; font-size: 12px; margin-right: 6px; }
+        .tx-amount.EXPENSE { color: #e74c3c; }
+        .tx-amount.INCOME { color: #27ae60; }
+        .delBtn {
+            background: none;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        #message { color: #e74c3c; font-size: 13px; margin-top: 6px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>머니로그</h1>
+        <button id="logoutBtn">로그아웃</button>
+    </header>
+
+    <div class="summary">
+        <div><div class="label">이번 달 수입</div><div class="value" id="sumIncome">0원</div></div>
+        <div><div class="label">이번 달 지출</div><div class="value" id="sumExpense">0원</div></div>
+        <div><div class="label">잔액</div><div class="value" id="sumBalance">0원</div></div>
+    </div>
+
+    <div class="card">
+        <h2>거래 등록</h2>
+        <div class="form-row">
+            <select id="type">
+                <option value="EXPENSE">지출</option>
+                <option value="INCOME">수입</option>
+            </select>
+            <select id="categoryId"></select>
+            <input type="text" id="amount" placeholder="금액" />
+        </div>
+        <div class="form-row">
+            <input type="text" id="description" placeholder="설명" />
+            <input type="date" id="transactionDate" />
+            <button class="primary" id="addBtn">등록</button>
+        </div>
+        <div id="message"></div>
+    </div>
+
+    <div class="card">
+        <h2>이번 달 거래내역</h2>
+        <ul id="txList"></ul>
+    </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+    const currentYearMonth = new Date().toISOString().slice(0, 7);
+    document.getElementById("transactionDate").value = new Date().toISOString().slice(0, 10);
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("accessToken");
+        location.href = "/login.html";
+    });
+
+    async function loadCategories() {
+        const res = await apiFetch("/api/categories");
+        const select = document.getElementById("categoryId");
+        select.innerHTML = res.data.map(c => `<option value="${c.id}">${c.name} (${c.type === "EXPENSE" ? "지출" : "수입"})</option>`).join("");
+    }
+
+    async function loadTransactions() {
+        const res = await apiFetch(`/api/transactions?yearMonth=${currentYearMonth}&page=0&size=50`);
+        const list = document.getElementById("txList");
+        const txs = res.data.transactions;
+        if (txs.length === 0) {
+            list.innerHTML = "<li>이번 달 거래내역이 없습니다.</li>";
+            return;
+        }
+        list.innerHTML = txs.map(t => `
+      <li>
+        <span class="tx-info">
+          <span class="cat">${t.categoryName}</span>${t.description || ""}
+          <span style="color:#aaa; font-size:12px;">· ${t.transactionDate}</span>
+        </span>
+        <span>
+          <span class="tx-amount ${t.type}">${t.type === "EXPENSE" ? "-" : "+"}${t.amount.toLocaleString()}원</span>
+          <button class="delBtn" onclick="deleteTx(${t.id})">삭제</button>
+        </span>
+      </li>
+    `).join("");
+    }
+
+    async function loadStatistics() {
+        const res = await apiFetch(`/api/statistics/monthly?yearMonth=${currentYearMonth}`);
+        document.getElementById("sumIncome").textContent = res.data.income.toLocaleString() + "원";
+        document.getElementById("sumExpense").textContent = res.data.expense.toLocaleString() + "원";
+        document.getElementById("sumBalance").textContent = res.data.balance.toLocaleString() + "원";
+    }
+
+    async function refreshAll() {
+        await Promise.all([loadTransactions(), loadStatistics()]);
+    }
+
+    document.getElementById("addBtn").addEventListener("click", async () => {
+        const messageEl = document.getElementById("message");
+        messageEl.textContent = "";
+        try {
+            await apiFetch("/api/transactions", {
+                method: "POST",
+                body: JSON.stringify({
+                    type: document.getElementById("type").value,
+                    amount: Number(document.getElementById("amount").value),
+                    categoryId: Number(document.getElementById("categoryId").value),
+                    description: document.getElementById("description").value,
+                    transactionDate: document.getElementById("transactionDate").value,
+                }),
+            });
+            document.getElementById("amount").value = "";
+            document.getElementById("description").value = "";
+            await refreshAll();
+        } catch (e) {
+            messageEl.textContent = e.message;
+        }
+    });
+
+    async function deleteTx(id) {
+        if (!confirm("삭제하시겠습니까?")) return;
+        await apiFetch(`/api/transactions/${id}`, { method: "DELETE" });
+        await refreshAll();
+    }
+
+    (async () => {
+        await loadCategories();
+        await refreshAll();
+    })();
+</script>
+</body>
+</html>
