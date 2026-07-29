@@ -1,6 +1,6 @@
 # 머니로그(MoneyLog) ERD / 테이블 정의서
 
-- 작성자: (이름)
+- 작성자: 김태영
 - 작성일: 2026-07-23
 - 관련 문서: [docs/requirements.md](./requirements.md)
 
